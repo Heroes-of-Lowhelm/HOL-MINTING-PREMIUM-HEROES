@@ -165,7 +165,7 @@ transition callback(randomnumber: Uint256, id: Uint256)
     (* Call NFT contract's Mint function with the received random number *)
     (* This contract address must be set as Minter in the NFT Contract *)
     heroesNFTAddressTmp <- heroesNFTAddress;
-    msg = {_tag: "Mint"; _recipient: heroesNFTAddressTmp; _amount: zero; to: callerAddress};
+    msg = {_tag: "Mint"; _recipient: heroesNFTAddressTmp; _amount: zero; to: callerAddress, token_rui: "", seed: randomnumber};
     msgs = one_msg msg;
     send msgs
 end
