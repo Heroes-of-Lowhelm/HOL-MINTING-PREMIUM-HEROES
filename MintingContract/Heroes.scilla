@@ -11,6 +11,12 @@ type Operation =
 | Add
 | Sub
 
+(* Heroes type *)
+type HeroesTrait =
+| Name of String
+| GradeLevel of String
+| UnitType of String
+
 (* Global variables *)
 let zero_address = 0x0000000000000000000000000000000000000000
 let false = False
