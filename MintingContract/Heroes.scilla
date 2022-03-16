@@ -13,9 +13,11 @@ type Operation =
 
 (* Heroes type *)
 type HeroesTrait =
-| Name of String
-| GradeLevel of String
-| UnitType of String
+| HeroesTrait of String String String
+
+(* Batch Param type *)
+type BatchParam = 
+| BatchParam of ByStr20 String Uint256
 
 (* Global variables *)
 let zero_address = 0x0000000000000000000000000000000000000000
@@ -166,6 +168,9 @@ field token_uris: Map Uint256 String = Emp Uint256 String
 
 (* Mapping from token ID to its owner *)
 field token_owners: Map Uint256 ByStr20 = Emp Uint256 ByStr20
+
+(* Mappint from token ID to its traits such as name, grade level, unit type etc... *)
+field token_traits: Map Uint256 HeroesTrait = Emp Uint256 HeroesTrait
 
 (* The total number of tokens minted *)
 field token_id_count: Uint256 = Uint256 0
@@ -357,7 +362,7 @@ end
 (* - `to` must not be the zero address. Otherwise, it must throw `ZeroAddressDestinationError` *)
 (* - `to` must not be `_this_address`. Otherwise, it must throw `ThisAddressDestinationError` *)
 (* - `_sender` must be a minter. Otherwise, it must throw `NotMinterError` *)
-procedure MintToken(to: ByStr20)
+procedure MintToken(to: ByStr20, seed: Uint256)
   RequireValidDestination to;
 
   IsMinter _sender;
@@ -374,6 +379,59 @@ procedure MintToken(to: ByStr20)
   (* add one to the token owner balance *)
   UpdateBalance add_operation to;
   
+  (* create nft traits according to the seed *)
+  hundred = Uint256 100;
+  three = Uint256 3;
+  four = Uint256 4;
+  zero = Uint256 0;
+  one = Uint256 1;
+  two = Uint256 2;
+  restHundred = builtin rem seed hundred;
+  match restHundred with
+  | builtin lt rest 80 =>
+    restThree = builtin rem seed three;
+    match restThree with
+    | zero =>
+      (* this is 3* && Gui Ping*)
+      token_traits[token_id] := HeroesTrait "Gui Ping - #3*" "Gui Ping" "3*"
+    | one =>
+      (* this is 3* && Calix *)
+      token_traits[token_id] := HeroesTrait "Calix - #3*" "Calix" "3*"
+    | two =>
+      (* this is 3* && Mia *)
+      token_traits[token_id] := HeroesTrait "Mia - #3*" "Mia" "3*"
+    end
+  | builtin lt rest 98 =>
+    restThree = builtin rem seed three;
+    match restThree with
+    | zero =>
+      (* this is 4* && Eryx *)
+      token_traits[token_id] := HeroesTrait "Eryx - #4*" "Eryx" "4*"
+    | one =>
+      (* this is 4* && Callan *)
+      token_traits[token_id] := HeroesTrait "Callan - #4*" "Callan" "4*"
+    | two =>
+      (* this is 4* && Bozhena *)
+      token_traits[token_id] := HeroesTrait "Bozhena - #4*" "Bozhena" "4*"
+    end
+  | _ =>
+    restFour = builtin rem seed four;
+    match restFour with
+    | zero =>
+      (* this is 5* && Syviis *)
+      token_traits[token_id] := HeroesTrait "Syviis - #5*" "Syviis" "5*"
+    | one =>
+      (* this is 5* && Amelia *)
+      token_traits[token_id] := HeroesTrait "Amelia - #5*" "Amelia" "5*"
+    | two =>
+      (* this is 5* && Donovan *)
+      token_traits[token_id] := HeroesTrait "Donovan - #5*" "Donovan" "5*"
+    | three =>
+      (* this is 5* && Leo *)
+      token_traits[token_id] := HeroesTrait "Leo - #5*" "Leo" "5*"
+    end
+  end
+
   (* add one to the total supply *)
   current_supply <- total_supply;
   new_supply = builtin add current_supply one;
@@ -390,10 +448,10 @@ procedure SetTokenURI(token_id: Uint256, token_uri: String)
   end
 end
 
-procedure HandleMint(info: Pair ByStr20 String)
+procedure HandleMint(info: BatchParam)
   match info with
-  | Pair to token_uri =>
-    MintToken to;
+  | BatchParam to token_uri seed=>
+    MintToken to seed;
     token_id <- token_id_count;
     SetTokenURI token_id token_uri
   end
@@ -614,7 +672,7 @@ end
 (* - The contract must not be paused. Otherwise, it must throw `PausedError` *)
 transition Mint(to: ByStr20, token_uri: String, seed: Uint256)
   RequireNotPaused;
-  MintToken to;
+  MintToken to seed;
   token_id <- token_id_count;
   SetTokenURI token_id token_uri;
 
@@ -626,12 +684,12 @@ transition Mint(to: ByStr20, token_uri: String, seed: Uint256)
   };
   event e;
   msg_to_recipient = {
-    _tag: "ZRC6_RecipientAcceptMint";
+    _tag: "HeroesNFT_RecipientAcceptMint";
     _recipient: to;
     _amount: Uint128 0
   };
   msg_to_sender = {
-    _tag: "ZRC6_MintCallback";
+    _tag: "Heroes_MintCallback";
     _recipient: _sender;
     _amount: Uint128 0;
     to: to;
@@ -647,7 +705,7 @@ end
 (* @param: to_token_uri_pair_list - List of Pair (to, token_uri). *)
 (* @Requirements: *)
 (* - The contract must not be paused. Otherwise, it must throw `PausedError` *)
-transition BatchMint(to_token_uri_pair_list: List (Pair ByStr20 String))
+transition BatchMint(to_token_uri_pair_list: List (BatchParam))
   RequireNotPaused;
   cur_id <- token_id_count;
   start_id = builtin add cur_id one;
