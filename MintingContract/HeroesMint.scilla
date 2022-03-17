@@ -10,10 +10,12 @@ library HeroesMint
 let one = Uint256 1
 let zero = Uint128 0
 let true = True
+let empty_string = ""
 let one_msg = 
     fun (msg : Message) => 
         let nil_msg = Nil {Message} in
         Cons {Message} msg nil_msg   
+
 (* Dummy user-defined ADT *)
 type Error =
 | CodeIsOracle
@@ -22,6 +24,39 @@ type Error =
 | CodeIsOwner
 | CodeIsNFTContractAddressNotSet
 
+(* Batch Param type *)
+type BatchParam = 
+| BatchParam of ByStr20 String Uint256
+
+let cons_one_batch = 
+    fun (to: ByStr20) =>
+    fun (seed: Uint256) =>
+        let one_batch = BatchParam to empty_string seed in
+        let nil_batch = Nil {BatchParam} in
+        Cons {BatchParam} one_batch nil_batch
+
+let cons_ten_caller = 
+    fun (to: ByStr20) =>
+        let nil_caller = Nil {ByStr20} in
+        let one_caller = Cons {ByStr20} to nil_caller in
+        let two_caller = Cons {ByStr20} to one_caller in
+        let three_caller = Cons {ByStr20} to two_caller in
+        let four_caller = Cons {ByStr20} to three_caller in
+        let five_caller = Cons {ByStr20} to four_caller in
+        let six_caller = Cons {ByStr20} to five_caller in
+        let seven_caller = Cons {ByStr20} to six_caller in
+        let eight_caller = Cons {ByStr20} to seven_caller in
+        let nine_caller = Cons {ByStr20} to eight_caller in
+        Cons {ByStr20} to nine_caller in
+
+let const_ten_batch = 
+    fun (seeds: List(Uint256)) =>
+    fun (to: ByStr20) =>
+        let f = cons_one_batch to in
+        let for_allUint256 = @list_forall Uint256 in
+        for_allUint256 f seeds
+
+        
 let make_error =
     fun (result : Error) =>
         let result_code = 
@@ -48,10 +83,16 @@ contract HeroesMint
 field oracleAddress: Option ByStr20 = None {ByStr20}
 field heroesNFTAddress: Option ByStr20 = None {ByStr20}
 field myRequests: Map Uint256 Bool = Emp Uint256 Bool
+field myBatchRequests: Map Uint256 Bool = Emp Uint256 Bool
 field requestedCallerCount: Uint256 = Uint256 0
 field processedCallerCount: Uint256 = Uint256 0
 (* Mapping for caller Address id to caller address *)
 field callerAddresses: Map Uint256 ByStr20 = Emp Uint256 ByStr20
+
+field requestedBatchCallerCount: Uint256 = Uint256 0
+field processedBatchCallerCount: Uint256 = Uint256 0
+(* Mapping for caller Address id to caller address *)
+field batchCallerAddresses: Map Uint256 ByStr20 = Emp Uint256 ByStr20
 
 (**************************************)
 (*             Procedures             *)
@@ -140,12 +181,42 @@ transition MintNFT()
     end
 end
 
+transition BatchMintNFT()
+    oracleAddressTmp <- oracleAddress;
+    heroesNFTAddressTmp <- heroesNFTAddress;
+    match oracleAddressTmp with
+    | Some v =>
+        match heroesNFTAddressTmp with
+        | Some heroesValue =>
+            msg = {_tag: "requestBatchRandomNumber"; _recipient: v; _amount: zero};
+            msgs = one_msg msg;
+            send msgs;
+            requestedBatchCallerCountTmp <- requestedBatchCallerCount;
+            batchCallerAddresses[requestedBatchCallerCountTmp] := _sender;
+            tmpVal = builtin add requestedBatchCallerCountTmp one;
+            requestedBatchCallerCount := tmpVal
+        | None =>
+            err = CodeIsNFTContractAddressNotSet;
+            ThrowError err
+        end
+    | None =>
+        err = CodeIsOracleAddressNotSet;
+        ThrowError err
+    end
+end
 (* @dev: Receive request id from the oracle contract. Only oracle contract allowed to invoke.   *)
 (* param id:      Request id.                                                                   *)
 transition getRequestId(id: Uint256)
     IsNotOracle _sender;
     myRequests[id] := true;
     e = {_eventname: "ReceivedNewRequestId"; id: id};
+    event e
+end
+
+transition getBatchRequestId(id: Uint256)
+    IsNotOracle _sender;
+    myBatchRequests[id] := true;
+    e = {_eventname: "ReceivedNewBatchRequestId"; id: id};
     event e
 end
 
@@ -162,12 +233,40 @@ transition callback(randomnumber: Uint256, id: Uint256)
     callerAddress <- callerAddresses[processedCallerCountTmp];
     delete callerAddresses[processedCallerCountTmp];
     tmpVal = builtin add processedCallerCountTmp one;
+    processedCallerCount := tmpVal;
     (* Call NFT contract's Mint function with the received random number *)
     (* This contract address must be set as Minter in the NFT Contract *)
     heroesNFTAddressTmp <- heroesNFTAddress;
     match heroesNFTAddressTmp with
     | Some v =>
         msg = {_tag: "Mint"; _recipient: v; _amount: zero; to: callerAddress; token_rui: ""; seed: randomnumber};
+        msgs = one_msg msg;
+        send msgs
+    | None =>
+        err = CodeIsOracleAddressNotSet;
+        ThrowError err
+    end
+end
+
+transition callbackBatch(randomnumbers: List (Uint256), id: Uint256)
+    IsNotOracle _sender;
+    IsNotPendingRequest id;
+    e = {_eventname: "RandomNumberBatchReceived"; randomnumbers: randomnumbers};
+    event e;
+    delete myRequests[id];
+    processedBatchCallerCountTmp <- processedBatchCallerCount;
+    batchCallerAddress <- batchCallerAddresses[processedBatchCallerCountTmp];
+    delete batchCallerAddresses[processedBatchCallerCountTmp];
+    tmpVal = builtin add processedBatchCallerCountTmp one;
+    processedBatchCallerCount := tmpVal;
+    (* Call NFT contract's Mint function with the received random number *)
+    (* This contract address must be set as Minter in the NFT Contract *)
+    callers = cons_ten_caller batchCallerAddress;
+    forall 
+    heroesNFTAddressTmp <- heroesNFTAddress;
+    match heroesNFTAddressTmp with
+    | Some v =>
+        msg = {_tag: "BatchMint"; _recipient: v; _amount: zero; to_token_uri_pair_list: randomnumbers};
         msgs = one_msg msg;
         send msgs
     | None =>
