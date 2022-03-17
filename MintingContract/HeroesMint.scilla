@@ -4,7 +4,7 @@ scilla_version 0
 (***************************************************)
 (*               Associated library                *)
 (***************************************************)
-import IntUtils
+import IntUtils ListUtils 
 
 library HeroesMint
 let one = Uint256 1
@@ -31,32 +31,15 @@ type BatchParam =
 let cons_one_batch = 
     fun (to: ByStr20) =>
     fun (seed: Uint256) =>
-        let one_batch = BatchParam to empty_string seed in
-        let nil_batch = Nil {BatchParam} in
-        Cons {BatchParam} one_batch nil_batch
+        BatchParam to empty_string seed
 
-let cons_ten_caller = 
-    fun (to: ByStr20) =>
-        let nil_caller = Nil {ByStr20} in
-        let one_caller = Cons {ByStr20} to nil_caller in
-        let two_caller = Cons {ByStr20} to one_caller in
-        let three_caller = Cons {ByStr20} to two_caller in
-        let four_caller = Cons {ByStr20} to three_caller in
-        let five_caller = Cons {ByStr20} to four_caller in
-        let six_caller = Cons {ByStr20} to five_caller in
-        let seven_caller = Cons {ByStr20} to six_caller in
-        let eight_caller = Cons {ByStr20} to seven_caller in
-        let nine_caller = Cons {ByStr20} to eight_caller in
-        Cons {ByStr20} to nine_caller in
-
-let const_ten_batch = 
-    fun (seeds: List(Uint256)) =>
+let cons_all_batch =
+    fun (seeds: List (Uint256)) =>
     fun (to: ByStr20) =>
         let f = cons_one_batch to in
-        let for_allUint256 = @list_forall Uint256 in
-        for_allUint256 f seeds
+        let batch_list_uint256 = @list_map Uint256 BatchParam in
+        batch_list_uint256 f seeds
 
-        
 let make_error =
     fun (result : Error) =>
         let result_code = 
@@ -259,14 +242,15 @@ transition callbackBatch(randomnumbers: List (Uint256), id: Uint256)
     delete batchCallerAddresses[processedBatchCallerCountTmp];
     tmpVal = builtin add processedBatchCallerCountTmp one;
     processedBatchCallerCount := tmpVal;
+
+    batchParams = cons_all_batch randomnumbers batchCallerAddress;
     (* Call NFT contract's Mint function with the received random number *)
     (* This contract address must be set as Minter in the NFT Contract *)
-    callers = cons_ten_caller batchCallerAddress;
-    forall 
+    
     heroesNFTAddressTmp <- heroesNFTAddress;
     match heroesNFTAddressTmp with
     | Some v =>
-        msg = {_tag: "BatchMint"; _recipient: v; _amount: zero; to_token_uri_pair_list: randomnumbers};
+        msg = {_tag: "BatchMint"; _recipient: v; _amount: zero; to_token_uri_pair_list: batchParams};
         msgs = one_msg msg;
         send msgs
     | None =>
