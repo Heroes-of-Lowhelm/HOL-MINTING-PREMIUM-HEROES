@@ -23,6 +23,7 @@ type Error =
 | CodeIsOracleAddressNotSet
 | CodeIsOwner
 | CodeIsNFTContractAddressNotSet
+| CodeIsCallerAddressNotSet
 
 (* Batch Param type *)
 type BatchParam = 
@@ -49,6 +50,7 @@ let make_error =
         | CodeIsOracleAddressNotSet  => Int32 -3
         | CodeIsOwner                => Int32 -4
         | CodeIsNFTContractAddressNotSet => Int32 -5
+        | CodeIsCallerAddressNotSet => Int32 -6
         end
         in
         { _exception : "Error"; code : result_code }
@@ -222,9 +224,15 @@ transition callback(randomnumber: Uint256, id: Uint256)
     heroesNFTAddressTmp <- heroesNFTAddress;
     match heroesNFTAddressTmp with
     | Some v =>
-        msg = {_tag: "Mint"; _recipient: v; _amount: zero; to: callerAddress; token_rui: ""; seed: randomnumber};
-        msgs = one_msg msg;
-        send msgs
+        match callerAddress with
+        | Some value =>
+            msg = {_tag: "Mint"; _recipient: v; _amount: zero; to: value; token_rui: ""; seed: randomnumber};
+            msgs = one_msg msg;
+            send msgs
+        | None =>
+            err = CodeIsCallerAddressNotSet;
+            ThrowError err
+        end
     | None =>
         err = CodeIsOracleAddressNotSet;
         ThrowError err
@@ -243,16 +251,23 @@ transition callbackBatch(randomnumbers: List (Uint256), id: Uint256)
     tmpVal = builtin add processedBatchCallerCountTmp one;
     processedBatchCallerCount := tmpVal;
 
-    batchParams = cons_all_batch randomnumbers batchCallerAddress;
     (* Call NFT contract's Mint function with the received random number *)
     (* This contract address must be set as Minter in the NFT Contract *)
     
     heroesNFTAddressTmp <- heroesNFTAddress;
     match heroesNFTAddressTmp with
     | Some v =>
-        msg = {_tag: "BatchMint"; _recipient: v; _amount: zero; to_token_uri_pair_list: batchParams};
-        msgs = one_msg msg;
-        send msgs
+        match batchCallerAddress with
+        | Some value =>
+            batchParams = cons_all_batch randomnumbers value;
+            msg = {_tag: "BatchMint"; _recipient: v; _amount: zero; to_token_uri_pair_list: batchParams};
+            msgs = one_msg msg;
+            send msgs               
+        | None =>
+            err = CodeIsCallerAddressNotSet;
+            ThrowError err
+        end
+        
     | None =>
         err = CodeIsOracleAddressNotSet;
         ThrowError err
