@@ -1,4 +1,5 @@
 import { bytes, units } from "@zilliqa-js/util";
+// @ts-ignore
 import fs from "fs";
 import { Long, BN } from "@zilliqa-js/util";
 
