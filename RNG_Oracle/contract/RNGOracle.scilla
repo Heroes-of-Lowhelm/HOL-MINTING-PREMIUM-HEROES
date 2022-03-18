@@ -117,7 +117,7 @@ end
 (* param randomNumber:       Generated Random Number                                                                              *)
 (* param callerAddress:        Original sender address which invokes "getTWAPPrice" transition.                                   *)
 (* param id:        Request id.                                                                                                   *)
-transition setRandomNumber(randomNumber: Uint256, callerAddress: ByStr20, id: Uint256)
+transition setRandomNumber(random_number: Uint256, caller_address: ByStr20, id: Uint256)
     IsNotOwner _sender;
     isPendingRequest <- exists pendingRequests[id];
     match isPendingRequest with
@@ -127,14 +127,14 @@ transition setRandomNumber(randomNumber: Uint256, callerAddress: ByStr20, id: Ui
     | True =>
     end;
     delete pendingRequests[id];
-    msg = {_tag: "callback"; _recipient: callerAddress; _amount: zero; randomNumber: randomNumber; id: id};
+    msg = {_tag: "callback"; _recipient: caller_address; _amount: zero; random_number: random_number; id: id};
     msgs = one_msg msg;
     send msgs;
-    e = {_eventname: "SetRandomNumber"; randomNumber: randomNumber; callerAddress: callerAddress};
+    e = {_eventname: "SetRandomNumber"; random_number: random_number; caller_address: caller_address};
     event e
 end
 
-transition setBatchRandomNumber(randomNumbers: List (Uint256), callerAddress: ByStr20, id: Uint256)
+transition setBatchRandomNumber(random_numbers: List (Uint256), caller_address: ByStr20, id: Uint256)
     IsNotOwner _sender;
     isPendingRequest <- exists pendingBatchRequests[id];
     match isPendingRequest with
@@ -144,9 +144,9 @@ transition setBatchRandomNumber(randomNumbers: List (Uint256), callerAddress: By
     | True =>
     end;
     delete pendingBatchRequests[id];
-    msg = {_tag: "callbackBatch"; _recipient: callerAddress; _amount: zero; randomNumbers: randomNumbers; id: id};
+    msg = {_tag: "callbackBatch"; _recipient: caller_address; _amount: zero; random_numbers: random_numbers; id: id};
     msgs = one_msg msg;
     send msgs;
-    e = {_eventname: "SetBatchRandomNumber"; randomNumbers: randomNumbers; callerAddress: callerAddress};
+    e = {_eventname: "SetBatchRandomNumber"; random_numbers: random_numbers; caller_address: caller_address};
     event e
 end

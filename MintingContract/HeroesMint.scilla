@@ -216,10 +216,10 @@ end
 (* @dev: Receive Random Number and request id from oracle contract and then invokes Mint() transition of the Heroes NFT contract. Only oracle contract allowed to invoke  *)
 (* param randomnumber:      Random Number.                                                                     *)
 (* param id:       Request id.                                                                             *)
-transition callback(randomnumber: Uint256, id: Uint256)
+transition callback(random_number: Uint256, id: Uint256)
     IsNotOracle _sender;
     IsNotPendingRequest id;
-    e = {_eventname: "RandomNumberReceived"; randomnumber: randomnumber};
+    e = {_eventname: "RandomNumberReceived"; random_number: random_number};
     event e;
     delete myRequests[id];
     processedCallerCountTmp <- processedCallerCount;
@@ -234,7 +234,7 @@ transition callback(randomnumber: Uint256, id: Uint256)
     | Some v =>
         match callerAddress with
         | Some value =>
-            msg = {_tag: "Mint"; _recipient: v; _amount: zero; to: value; token_rui: ""; seed: randomnumber};
+            msg = {_tag: "Mint"; _recipient: v; _amount: zero; to: value; token_rui: ""; seed: random_number};
             msgs = one_msg msg;
             send msgs
         | None =>
@@ -247,10 +247,10 @@ transition callback(randomnumber: Uint256, id: Uint256)
     end
 end
 
-transition callbackBatch(randomnumbers: List (Uint256), id: Uint256)
+transition callbackBatch(random_numbers: List (Uint256), id: Uint256)
     IsNotOracle _sender;
     IsNotPendingRequest id;
-    e = {_eventname: "RandomNumberBatchReceived"; randomnumbers: randomnumbers};
+    e = {_eventname: "RandomNumberBatchReceived"; random_numbers: random_numbers};
     event e;
     delete myRequests[id];
     processedBatchCallerCountTmp <- processedBatchCallerCount;
@@ -267,7 +267,7 @@ transition callbackBatch(randomnumbers: List (Uint256), id: Uint256)
     | Some v =>
         match batchCallerAddress with
         | Some value =>
-            batchParams = cons_all_batch randomnumbers value;
+            batchParams = cons_all_batch random_numbers value;
             msg = {_tag: "BatchMint"; _recipient: v; _amount: zero; to_token_uri_pair_list: batchParams};
             msgs = one_msg msg;
             send msgs               

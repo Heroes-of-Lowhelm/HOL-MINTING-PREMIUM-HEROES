@@ -165,12 +165,12 @@ async function setRandom (callerAddress, randomNumber, id) {
             'setRandomNumber',
             [
                 {
-                    vname: 'randomNumber',
+                    vname: 'random_number',
                     type: 'Uint256',
-                    value: randomNumber + '',
+                    value: randomNumber,
                 },
                 {
-                    vname: 'callerAddress',
+                    vname: 'caller_address',
                     type: 'ByStr20',
                     value: callerAddress,
                 },
@@ -208,12 +208,12 @@ async function setBatchRandom (callerAddress, randomNumbers, id) {
             'setBatchRandomNumber',
             [
                 {
-                    vname: 'randomNumbers',
+                    vname: 'random_numbers',
                     type: 'List (Uint256)',
                     value: randomNumbers,
                 },
                 {
-                    vname: 'callerAddress',
+                    vname: 'caller_address',
                     type: 'ByStr20',
                     value: callerAddress,
                 },
