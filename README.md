@@ -42,4 +42,14 @@ If randomNumber % 3 == 2 then it's Mia
 ## Steps to deploy
 - Deploy Oracle Contract
 - Set env variables of Oracle Client (Oracle Contract address is needed)
-- 
+- Deploy Heroes NFT Contract with name, symbol, owner address ...
+
+    ** GasLimit - 60000
+
+    ** Gas Price - 2000000000
+- Deploy Minting Contract
+
+    ** Set Minting Contract address
+
+    ** Set Oracle Contract address
+- Run Oracle Client

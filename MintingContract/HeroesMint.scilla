@@ -141,6 +141,14 @@ transition setOracleAddress(oracleAddr : ByStr20)
     oracleAddress := oracleAddressTmp
 end
 
+(* @dev: Set Heroes NFT Contract address. Only contract owner allowed to invoke.   *)
+(* param oracleAddress:      Address of the oracle contract.                  *)
+transition setHeroesNFTAddress(heroesNFTAddress : ByStr20)
+    IsNotOwner _sender;
+    heroesNFTAddressTmp = Some {ByStr20} heroesNFTAddress ;
+    heroesNFTAddress := heroesNFTAddressTmp
+end
+
 (* @dev: Transition for users to Mint NFT.This transition invokes requestRandomNumber() transition in the oracle contract   *)
 transition MintNFT()
     oracleAddressTmp <- oracleAddress;
