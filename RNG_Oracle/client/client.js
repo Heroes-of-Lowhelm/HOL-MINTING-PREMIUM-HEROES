@@ -18,6 +18,7 @@ const VERSION = bytes.pack(chainId, msgVersion);
 
 
 var pendingRequests = []
+var pendingBatchRequests = []
 const CHUNK_SIZE = process.env.CHUNK_SIZE || 3
 const MAX_RETRIES = process.env.MAX_RETRIES || 5
 const SLEEP_INTERVAL = process.env.SLEEP_INTERVAL || 3000
@@ -76,6 +77,12 @@ async function ListenForEvents(deployed_contract_base_16) {
                     let callerAddress = eventObj["params"][1]["value"];
                     pendingRequests.push({callerAddress, id: requestId});
                 }
+
+                if (eventObj["_eventname"] == "RequestedBatchRandomNumber") {
+                    let requestId = eventObj["params"][0]["value"];
+                    let callerAddress = eventObj["params"][1]["value"];
+                    pendingBatchRequests.push({callerAddress, id: requestId});
+                }
             }
         }
     });
@@ -93,10 +100,17 @@ async function ListenForEvents(deployed_contract_base_16) {
 async function processQueue () {
     console.log("processing queue=============>");
     let processedRequests = 0
+    let processedBatchRequests = 0
     while (pendingRequests.length > 0 && processedRequests < CHUNK_SIZE) {
         const req = pendingRequests.shift()
         await processRequest(req.id, req.callerAddress)
         processedRequests++
+    }
+
+    while (pendingBatchRequests.length > 0 && processedBatchRequests < CHUNK_SIZE) {
+        const req = pendingBatchRequests.shift()
+        await processBatchRequest(req.id, req.callerAddress)
+        processedBatchRequests++
     }
 }
 
@@ -112,6 +126,30 @@ async function processRequest (id, callerAddress) {
             console.log("error while first step", error);
             if (retries === MAX_RETRIES - 1) {
                 await setRandom(callerAddress,  '0', id)
+                return
+            }
+            retries++
+        }
+    }
+}
+
+async function processBatchRequest (id, callerAddress) {
+    let retries = 0
+    while (retries < MAX_RETRIES) {
+        try {
+            let randomNumbers = ['90']; // 90 is for level 4
+            for(let i = 0; i < 9; i ++) {
+                let randomNumber = await getRandom();
+                randomNumbers.push(randomNumber);
+            }
+
+            console.log("Received Batch Random Number===========================>", randomNumbers);
+            await setBatchRandom(callerAddress, randomNumbers, id)
+            return
+        } catch (error) {
+            console.log("error while first step", error);
+            if (retries === MAX_RETRIES - 1) {
+                await setBatchRandom(callerAddress,  ['0'], id)
                 return
             }
             retries++
@@ -156,6 +194,49 @@ async function setRandom (callerAddress, randomNumber, id) {
         console.log("setting Random Number step 3===========>", confirmedTxn.receipt);
         if (confirmedTxn.receipt.success === true) {
            console.log("==============Transaction is successful===============")
+        }
+    } catch (e) {
+        console.log("Error while transaction===============>", e)
+    }
+}
+
+async function setBatchRandom (callerAddress, randomNumbers, id) {
+    console.log("setting Batch Random Number===========>");
+    try {
+        const rngOracleContract = zilliqa.contracts.at(process.env.RNG_ORACLE_ADDRESS);
+        const callTx = await rngOracleContract.callWithoutConfirm(
+            'setBatchRandomNumber',
+            [
+                {
+                    vname: 'randomNumbers',
+                    type: 'List (Uint256)',
+                    value: randomNumbers,
+                },
+                {
+                    vname: 'callerAddress',
+                    type: 'ByStr20',
+                    value: callerAddress,
+                },
+                {
+                    vname: 'id',
+                    type: 'Uint256',
+                    value: id,
+                }
+            ],
+            {
+                // amount, gasPrice and gasLimit must be explicitly provided
+                version: VERSION,
+                amount: new BN(0),
+                gasPrice: myGasPrice,
+                gasLimit: Long.fromNumber(8000),
+            },
+            false,
+        );
+        console.log("setting Random Number step 2===========>", callTx.id);
+        const confirmedTxn = await callTx.confirm(callTx.id);
+        console.log("setting Random Number step 3===========>", confirmedTxn.receipt);
+        if (confirmedTxn.receipt.success === true) {
+            console.log("==============Transaction is successful===============")
         }
     } catch (e) {
         console.log("Error while transaction===============>", e)
