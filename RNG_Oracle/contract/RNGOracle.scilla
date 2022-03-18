@@ -147,6 +147,6 @@ transition setBatchRandomNumber(randomNumbers: List (Uint256), callerAddress: By
     msg = {_tag: "callbackBatch"; _recipient: callerAddress; _amount: zero; randomNumbers: randomNumbers; id: id};
     msgs = one_msg msg;
     send msgs;
-    e = {_eventname: "SetBatchRandomNumber"; randomNumber: randomNumber; callerAddress: callerAddress};
+    e = {_eventname: "SetBatchRandomNumber"; randomNumbers: randomNumbers; callerAddress: callerAddress};
     event e
 end
