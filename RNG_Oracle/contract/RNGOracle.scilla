@@ -32,7 +32,7 @@ let random =
 
 let make_error =
     fun (result : Error) =>
-        let result_code = 
+        let result_code =
         match result with
         | CodeIsOwner               => Int32 -1
         | CodeIsPendingRequest      => Int32 -2
@@ -40,15 +40,15 @@ let make_error =
         in
         { _exception : "Error"; code : result_code }
 
-let one_msg = 
-    fun (msg : Message) => 
+let one_msg =
+    fun (msg : Message) =>
         let nil_msg = Nil {Message} in
-        Cons {Message} msg nil_msg       
+        Cons {Message} msg nil_msg
 
 (***************************************************)
 (*             The contract definition             *)
 (***************************************************)
-contract RNGOracle 
+contract RNGOracle
 (
     contract_owner: ByStr20
 )
@@ -57,6 +57,7 @@ contract RNGOracle
 field randNonce: Uint256 = Uint256 0
 field modulus: Uint256 = Uint256 1000
 field pendingRequests: Map Uint256 Bool = Emp Uint256 Bool
+field pendingBatchRequests: Map Uint256 Bool = Emp Uint256 Bool
 
 (**************************************)
 (*             Procedures             *)
@@ -97,7 +98,22 @@ transition requestRandomNumber()
     send msgs
 end
 
-(* @dev: Returns Radom Number to _callerAddress by invoking "callback" transition on it. Only contract owner allowed to invoke.   *)
+
+transition requestBatchRandomNumber()
+    randNonceTemp <- randNonce;
+    cur_nonce = builtin add randNonceTemp one;
+    randNonce := cur_nonce;
+    blk <- & BLOCKNUMBER;
+    id = random cur_nonce blk _sender;
+    pendingBatchRequests[id] := true;
+    e = {_eventname: "RequestedBatchRandomNumber"; id: id; callerAddress: _sender};
+    event e;
+    msg = {_tag: "getBatchRequestId"; _recipient: _sender; _amount: zero; id: id};
+    msgs = one_msg msg;
+    send msgs
+end
+
+(* @dev: Returns Random Number to _callerAddress by invoking "callback" transition on it. Only contract owner allowed to invoke.   *)
 (* param randomNumber:       Generated Random Number                                                                              *)
 (* param callerAddress:        Original sender address which invokes "getTWAPPrice" transition.                                   *)
 (* param id:        Request id.                                                                                                   *)
@@ -115,5 +131,22 @@ transition setRandomNumber(randomNumber: Uint256, callerAddress: ByStr20, id: Ui
     msgs = one_msg msg;
     send msgs;
     e = {_eventname: "SetRandomNumber"; randomNumber: randomNumber; callerAddress: callerAddress};
+    event e
+end
+
+transition setBatchRandomNumber(randomNumbers: List (Uint256), callerAddress: ByStr20, id: Uint256)
+    IsNotOwner _sender;
+    isPendingRequest <- exists pendingBatchRequests[id];
+    match isPendingRequest with
+    | False =>
+        err = CodeIsPendingRequest;
+        ThrowError err
+    | True =>
+    end;
+    delete pendingBatchRequests[id];
+    msg = {_tag: "callbackBatch"; _recipient: callerAddress; _amount: zero; randomNumbers: randomNumbers; id: id};
+    msgs = one_msg msg;
+    send msgs;
+    e = {_eventname: "SetBatchRandomNumber"; randomNumber: randomNumber; callerAddress: callerAddress};
     event e
 end
