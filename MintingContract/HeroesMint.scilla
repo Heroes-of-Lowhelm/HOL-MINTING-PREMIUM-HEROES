@@ -234,7 +234,7 @@ transition callback(random_number: Uint256, id: Uint256)
     | Some v =>
         match callerAddress with
         | Some value =>
-            msg = {_tag: "Mint"; _recipient: v; _amount: zero; to: value; token_rui: ""; seed: random_number};
+            msg = {_tag: "Mint"; _recipient: v; _amount: zero; to: value; token_uri: ""; seed: random_number};
             msgs = one_msg msg;
             send msgs
         | None =>
