@@ -281,3 +281,9 @@ transition callbackBatch(random_numbers: List (Uint256), id: Uint256)
         ThrowError err
     end
 end
+
+
+transition Heroes_MintCallback(to: ByStr20, token_id: Uint256, token_uri: String)
+    e = {_eventname: "HeroNFTIsMinted"; to: to; token_id: token_id; token_uri: token_uri};
+    event e
+end

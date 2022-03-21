@@ -49,7 +49,7 @@ If randomNumber % 3 == 2 then it's Mia
     ** Gas Price - 2000000000
 - Deploy Minting Contract
 
-    ** Set Minting Contract address
+    ** Set NFT Contract address
 
     ** Set Oracle Contract address
 - Heroes NFT contract configuration 
