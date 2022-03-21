@@ -784,7 +784,7 @@ transition BatchMint(to_token_uri_pair_list: List (BatchParam))
   };
   event e;
   msg_to_sender = {
-    _tag: "ZRC6_BatchMintCallback";
+    _tag: "Heroes_BatchMintCallback";
     _recipient: _sender;
     _amount: Uint128 0
   };

@@ -24,6 +24,7 @@ type Error =
 | CodeIsOwner
 | CodeIsNFTContractAddressNotSet
 | CodeIsCallerAddressNotSet
+| CodeIsBatchPendingRequest
 
 (* Batch Param type *)
 type BatchParam = 
@@ -51,6 +52,7 @@ let make_error =
         | CodeIsOwner                => Int32 -4
         | CodeIsNFTContractAddressNotSet => Int32 -5
         | CodeIsCallerAddressNotSet => Int32 -6
+        | CodeIsBatchPendingRequest => Int32 -7
         end
         in
         { _exception : "Error"; code : result_code }
@@ -114,6 +116,16 @@ procedure IsNotPendingRequest(id: Uint256)
     match isPendingRequest with
     | False =>
         err = CodeIsPendingRequest;
+        ThrowError err
+    | True =>
+    end
+end
+
+procedure IsNotBatchPendingRequest(id: Uint256)
+    isBatchPendingRequest <- exists myBatchRequests[id];
+    match isBatchPendingRequest with
+    | False =>
+        err = CodeIsBatchPendingRequest;
         ThrowError err
     | True =>
     end
@@ -249,7 +261,7 @@ end
 
 transition callbackBatch(random_numbers: List (Uint256), id: Uint256)
     IsNotOracle _sender;
-    IsNotPendingRequest id;
+    IsNotBatchPendingRequest id;
     e = {_eventname: "RandomNumberBatchReceived"; random_numbers: random_numbers};
     event e;
     delete myRequests[id];
@@ -285,5 +297,10 @@ end
 
 transition Heroes_MintCallback(to: ByStr20, token_id: Uint256, token_uri: String)
     e = {_eventname: "HeroNFTIsMinted"; to: to; token_id: token_id; token_uri: token_uri};
+    event e
+end
+
+transition Heroes_BatchMintCallback()
+    e = {_eventname: "HeroesNFTBatchMintSuccessful"};
     event e
 end
