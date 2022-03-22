@@ -26,11 +26,7 @@ type Error =
 | CodeIsCallerAddressNotSet
 | CodeIsBatchPendingRequest
 
-(* Batch Param type *)
-type BatchParam = 
-| BatchParam of ByStr20 String Uint256
-
-let cons_one_batch = 
+(* let cons_one_batch = 
     fun (to: ByStr20) =>
     fun (seed: Uint256) =>
         BatchParam to empty_string seed
@@ -40,7 +36,7 @@ let cons_all_batch =
     fun (to: ByStr20) =>
         let f = cons_one_batch to in
         let batch_list_uint256 = @list_map Uint256 BatchParam in
-        batch_list_uint256 f seeds
+        batch_list_uint256 f seeds *)
 
 let make_error =
     fun (result : Error) =>
@@ -279,8 +275,8 @@ transition callbackBatch(random_numbers: List (Uint256), id: Uint256)
     | Some v =>
         match batchCallerAddress with
         | Some value =>
-            batchParams = cons_all_batch random_numbers value;
-            msg = {_tag: "BatchMint"; _recipient: v; _amount: zero; to_token_uri_pair_list: batchParams};
+            (* batchParams = cons_all_batch random_numbers value; *)
+            msg = {_tag: "BatchMint"; _recipient: v; _amount: zero; to: value; seeds: random_numbers};
             msgs = one_msg msg;
             send msgs               
         | None =>

@@ -101,6 +101,19 @@ let make_error =
     in
     { _exception: "Error"; code: result_code }
 
+
+let cons_one_batch = 
+    fun (to: ByStr20) =>
+    fun (seed: Uint256) =>
+        BatchParam to empty_string seed
+
+let cons_all_batch =
+    fun (seeds: List (Uint256)) =>
+    fun (to: ByStr20) =>
+        let f = cons_one_batch to in
+        let batch_list_uint256 = @list_map Uint256 BatchParam in
+        batch_list_uint256 f seeds
+
 (***************************************************)
 (*             The contract definition             *)
 (***************************************************)
@@ -195,6 +208,7 @@ field spenders: Map Uint256 ByStr20 = Emp Uint256 ByStr20
 
 (* Mapping from token owner to operators authorized by the token owner *)
 field operators: Map ByStr20 (Map ByStr20 Bool) = Emp ByStr20 (Map ByStr20 Bool)
+
 
 (* Emit Errors *)
 procedure Throw(error: Error)
@@ -770,10 +784,11 @@ end
 (* @param: to_token_uri_pair_list - List of Pair (to, token_uri). *)
 (* @Requirements: *)
 (* - The contract must not be paused. Otherwise, it must throw `PausedError` *)
-transition BatchMint(to_token_uri_pair_list: List (BatchParam))
+transition BatchMint(to: ByStr20, seeds: List (Uint256))
   RequireNotPaused;
   cur_id <- token_id_count;
   start_id = builtin add cur_id one;
+  to_token_uri_pair_list = cons_all_batch seeds to;
   forall to_token_uri_pair_list HandleMint;
   end_id <- token_id_count;
   e = {
